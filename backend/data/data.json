@@ -1,0 +1,156 @@
+{
+  "movies": [
+    {
+      "id": 1,
+      "name": "Spider Man: Brand New Day",
+      "releaseDate": "2026-07-31",
+      "poster": "https://res.cloudinary.com/dvwxp2pp7/image/upload/v1786174766/Spider_Man_BND_ncnbum.jpg"
+    },
+    {
+      "id": 2,
+      "name": "The Odyssey",
+      "releaseDate": "2026-07-17",
+      "poster": "https://res.cloudinary.com/dvwxp2pp7/image/upload/v1786174766/Odyssey_y4caom.jpg"
+    },
+    {
+      "id": 3,
+      "name": "Avengers: Doomsday",
+      "releaseDate": "2026-12-18",
+      "poster": "https://res.cloudinary.com/dvwxp2pp7/image/upload/v1786174766/AD_aoexrw.jpg"
+    },
+    {
+      "id": 4,
+      "name": "Dune: Part Three",
+      "releaseDate": "2026-12-18",
+      "poster": "https://res.cloudinary.com/dvwxp2pp7/image/upload/v1786174766/Dune_3_e6v2gm.jpg"
+    },
+    {
+      "id": 5,
+      "name": "Toy Story 5",
+      "releaseDate": "2026-06-19",
+      "poster": "https://res.cloudinary.com/dvwxp2pp7/image/upload/v1786174766/Toy_Story_5_epxhxd.jpg"
+    }
+  ],
+  "shows": [
+    {
+      "id": 1,
+      "movieId": 1,
+      "movieName": "Spider Man: Brand New Day",
+      "theatreId": 1,
+      "theatreName": "Star Cineplex - Bashundhara",
+      "dateTime": "2026-08-08T15:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 2,
+      "movieId": 1,
+      "movieName": "Spider Man: Brand New Day",
+      "theatreId": 2,
+      "theatreName": "Star Cineplex - Dhanmondi",
+      "dateTime": "2026-08-08T19:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 3,
+      "movieId": 2,
+      "movieName": "The Odyssey",
+      "theatreId": 3,
+      "theatreName": "Blockbuster Cinemas - Jamuna Future Park",
+      "dateTime": "2026-08-08T16:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 4,
+      "movieId": 2,
+      "movieName": "The Odyssey",
+      "theatreId": 4,
+      "theatreName": "Cineplex - Uttara",
+      "dateTime": "2026-08-08T20:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 5,
+      "movieId": 3,
+      "movieName": "Avengers: Doomsday",
+      "theatreId": 1,
+      "theatreName": "Star Cineplex - Bashundhara",
+      "dateTime": "2026-12-18T14:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 6,
+      "movieId": 3,
+      "movieName": "Avengers: Doomsday",
+      "theatreId": 5,
+      "theatreName": "Movie Time - Chittagong",
+      "dateTime": "2026-08-09T18:30:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 7,
+      "movieId": 4,
+      "movieName": "Dune: Part Three",
+      "theatreId": 2,
+      "theatreName": "Star Cineplex - Dhanmondi",
+      "dateTime": "2026-12-18T15:30:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 8,
+      "movieId": 4,
+      "movieName": "Dune: Part Three",
+      "theatreId": 3,
+      "theatreName": "Blockbuster Cinemas - Jamuna Future Park",
+      "dateTime": "2026-12-18T21:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 9,
+      "movieId": 5,
+      "movieName": "Toy Story 5",
+      "theatreId": 4,
+      "theatreName": "Cineplex - Uttara",
+      "dateTime": "2026-08-10T14:30:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    },
+    {
+      "id": 10,
+      "movieId": 5,
+      "movieName": "Toy Story 5",
+      "theatreId": 5,
+      "theatreName": "Movie Time - Chittagong",
+      "dateTime": "2026-08-10T19:00:00+06:00",
+      "seatPlan": {
+        "A": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" },
+        "B": { "1": "Available", "2": "Available", "3": "Available", "4": "Available", "5": "Available", "6": "Available", "7": "Available", "8": "Available", "9": "Available", "10": "Available" }
+      }
+    }
+  ]
+}
