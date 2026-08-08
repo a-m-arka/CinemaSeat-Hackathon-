@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const showSeatSchema = new mongoose.Schema({
   showId: {
-    type: String,
+    type: Number,
     required: true,
   },
   seatId: {
