@@ -105,7 +105,8 @@ function App() {
           flex
           min-h-screen
           flex-col
-          bg-zinc-950
+          app-shell
+          bg-[#08080d]
           text-white
         "
       >
@@ -159,9 +160,9 @@ function App() {
         {/* FOOTER */}
         <footer
           className="
-            mt-16
+            mt-24
             border-t
-            border-zinc-900
+            border-white/5
             px-6
             py-8
           "
@@ -171,25 +172,28 @@ function App() {
             className="
               mx-auto
               flex
-              max-w-7xl
+              max-w-[1440px]
               flex-col
               justify-between
               gap-4
               text-sm
-              text-zinc-600
+              text-zinc-500
               sm:flex-row
               sm:items-center
             "
           >
 
-            <p>
-              © CinemaSeat
-            </p>
+            <div>
+              <p className="font-bold text-zinc-300">CinemaSeat</p>
+              <p className="mt-1 text-xs">© 2026 · Made for better movie nights.</p>
+            </div>
 
 
-            <p>
-              Reliable booking when everyone wants the same seat.
-            </p>
+            <div className="flex flex-wrap gap-5 text-xs font-semibold uppercase tracking-wider">
+              <span>Live seats</span>
+              <span>Secure holds</span>
+              <span>Instant tickets</span>
+            </div>
 
           </div>
 

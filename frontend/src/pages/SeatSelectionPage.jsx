@@ -18,6 +18,7 @@ function SeatSelectionPage() {
   const [show, setShow] = useState(null);
   const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [activeTier, setActiveTier] = useState("ALL");
 
   const [hold, setHold] = useState(null);
   const [payment, setPayment] = useState(null);
@@ -540,11 +541,56 @@ function SeatSelectionPage() {
     0,
   );
 
+  const seatRows = seats.reduce((rows, seat) => {
+    const rowName = seat.row || String(seat.label).match(/^[A-Za-z]+/)?.[0] || "Seats";
+    const existingRow = rows.find((row) => row.name === rowName);
+
+    if (existingRow) {
+      existingRow.seats.push(seat);
+    } else {
+      rows.push({ name: rowName, seats: [seat] });
+    }
+
+    return rows;
+  }, []).map((row) => ({
+    ...row,
+    seats: [...row.seats].sort((first, second) => {
+      const firstColumn = first.column ?? Number(String(first.label).match(/\d+$/)?.[0] || 0);
+      const secondColumn = second.column ?? Number(String(second.label).match(/\d+$/)?.[0] || 0);
+      return firstColumn - secondColumn;
+    }),
+  })).sort((first, second) => first.name.localeCompare(second.name));
+
+  const seatTiers = seats.reduce((tiers, seat) => {
+    const tierName = seat.tier || "Standard";
+    const existingTier = tiers.find((tier) => tier.name === tierName);
+
+    if (existingTier) {
+      existingTier.total += 1;
+      if (seat.status === "AVAILABLE") existingTier.available += 1;
+    } else {
+      tiers.push({
+        name: tierName,
+        price: seat.price,
+        total: 1,
+        available: seat.status === "AVAILABLE" ? 1 : 0,
+      });
+    }
+    return tiers;
+  }, []).sort((first, second) =>
+    ["Standard", "Classic", "Premium", "VIP"].indexOf(first.name) -
+    ["Standard", "Classic", "Premium", "VIP"].indexOf(second.name),
+  );
+
+  const effectiveActiveTier = activeTier === "ALL" || seatTiers.some((tier) => tier.name === activeTier)
+    ? activeTier
+    : "ALL";
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 lg:px-10">
 
       {/* PAGE HEADER */}
-      <div>
+      <div className="premium-panel rounded-[2rem] p-6 sm:p-8 lg:p-10">
         <Link
           to={
             show?.movie?.id
@@ -575,14 +621,12 @@ function SeatSelectionPage() {
                 `Show #${showId}`}
             </p>
 
-            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
+            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
               Choose your seat
             </h1>
 
             <p className="mt-3 text-sm text-zinc-400 sm:text-base">
-              {show
-                ? `${show.time} · ${show.theatre} · Select up to 4 seats`
-                : "Select up to four available seats."}
+              Select up to four seats from the live auditorium below.
             </p>
           </div>
 
@@ -626,17 +670,18 @@ function SeatSelectionPage() {
                   seatInteractionLocked
                 }
                 className="
-                  rounded-lg
+                  rounded-xl
                   border
-                  border-zinc-700
-                  px-4
-                  py-2
+                  border-white/10
+                  bg-white/5
+                  px-5
+                  py-3
                   text-sm
                   font-medium
                   text-zinc-300
                   transition
-                  hover:border-zinc-500
-                  hover:bg-zinc-900
+                  hover:border-violet-400/30
+                  hover:bg-violet-500/10
                   disabled:cursor-not-allowed
                   disabled:opacity-50
                   focus-visible:outline-none
@@ -653,6 +698,22 @@ function SeatSelectionPage() {
           )}
 
         </div>
+
+        {show && (
+          <dl className="mt-8 grid gap-3 border-t border-white/10 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Date", show.date || "Today"],
+              ["Show time", show.time || "—"],
+              ["Cinema hall", show.theatre || show.hall || "—"],
+              ["Booking limit", "Up to 4 seats"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-white/5 bg-white/[0.035] px-5 py-4">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">{label}</dt>
+                <dd className="mt-2 text-lg font-bold text-zinc-100">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
 
         {/* MOBILE LAST UPDATED */}
         {!checkoutVisible &&
@@ -699,24 +760,69 @@ function SeatSelectionPage() {
       )}
 
 
+      {/* PRICE TIER FILTER */}
+      {!loading && seatTiers.length > 0 && (
+        <section className="mt-8" aria-label="Seat price sections">
+          <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-300">Choose a section</p>
+              <h2 className="mt-1 text-2xl font-black">Seat class & price</h2>
+            </div>
+            <p className="text-sm text-zinc-500">Filter the auditorium without losing selected seats.</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <button
+              type="button"
+              onClick={() => setActiveTier("ALL")}
+              aria-pressed={effectiveActiveTier === "ALL"}
+              aria-controls="seat-map"
+              className={`rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${effectiveActiveTier === "ALL" ? "border-violet-400 bg-violet-500/15 shadow-[0_12px_35px_rgba(91,33,182,0.2)]" : "border-white/10 bg-white/[0.035] hover:border-white/20"}`}
+            >
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">All sections</span>
+              <span className="mt-2 block text-xl font-black">{seats.filter((seat) => seat.status === "AVAILABLE").length} available</span>
+            </button>
+
+            {seatTiers.map((tier) => (
+              <button
+                key={tier.name}
+                type="button"
+                onClick={() => setActiveTier(tier.name)}
+                aria-pressed={effectiveActiveTier === tier.name}
+                aria-controls="seat-map"
+                className={`rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 ${effectiveActiveTier === tier.name ? "border-violet-400 bg-violet-500/15 shadow-[0_12px_35px_rgba(91,33,182,0.2)]" : "border-white/10 bg-white/[0.035] hover:border-white/20"}`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="font-black">{tier.name}</span>
+                  <span className="font-black text-violet-300">৳{tier.price}</span>
+                </span>
+                <span className="mt-2 block text-xs text-zinc-500">{tier.available} of {tier.total} available</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+
       {/* SEAT MAP */}
       <section
-        className="mt-10 sm:mt-12"
+        id="seat-map"
+        className="premium-panel mt-8 rounded-[2.5rem] px-4 py-12 sm:px-8 sm:py-16"
         aria-busy={loading || refreshing}
       >
 
         {/* SCREEN */}
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-3xl">
 
           <div
             className="
-              h-2
+              h-3
               rounded-full
               bg-gradient-to-r
-              from-zinc-800
-              via-zinc-400
-              to-zinc-800
-              shadow-[0_12px_35px_rgba(255,255,255,0.15)]
+              from-transparent
+              via-violet-300
+              to-transparent
+              shadow-[0_12px_45px_rgba(139,92,246,0.45)]
             "
           />
 
@@ -738,53 +844,53 @@ function SeatSelectionPage() {
            * Horizontal scrolling keeps seats large and easy
            * to tap on narrow mobile screens.
            */
-          <div className="mt-10 overflow-x-auto pb-3 sm:mt-12">
+          <div className="mt-10 overscroll-x-contain overflow-x-auto pb-3 sm:mt-12">
 
-            <div className="mx-auto min-w-[420px] max-w-xl">
+            <div className="mx-auto min-w-[790px] max-w-4xl space-y-3">
 
-              <div className="grid grid-cols-6 place-items-center gap-2 sm:gap-3">
+              {seatRows.map((row) => (
+                <div key={row.name} className="grid grid-cols-[2rem_1fr_5rem] items-center gap-3">
+                  <span className="text-center text-xs font-black text-zinc-600">{row.name}</span>
 
-                {seats.map((seat) => (
+                  <div className="flex items-center justify-center gap-2.5">
+                    {row.seats.map((seat) => {
+                      const seatColumn = seat.column ?? Number(String(seat.label).match(/\d+$/)?.[0] || 0);
+                      const isSelected = selectedSeats.some((item) => item.id === seat.id);
+                      const isOwned = Boolean(
+                        hold?.status === "ACTIVE" &&
+                          (hold.seatIds?.includes(seat.id) || hold.seatId === seat.id),
+                      );
+                      const matchesTier = effectiveActiveTier === "ALL" ||
+                        (seat.tier || "Standard") === effectiveActiveTier;
 
-                  <Seat
-                    key={seat.id}
-                    seat={seat}
+                      return (
+                      <div key={seat.id} className={`${seatColumn === 6 ? "ml-7" : ""} ${!matchesTier && !isSelected && !isOwned ? "opacity-20" : ""}`}>
+                        <Seat
+                          seat={seat}
 
-                    isOwned={Boolean(
-                      hold?.status === "ACTIVE" &&
-                        (
-                          hold.seatIds?.includes(
-                            seat.id,
-                          ) ||
-                          hold.seatId ===
-                            seat.id
-                        ),
-                    )}
+                          isOwned={isOwned}
 
-                    isSelected={selectedSeats.some(
-                      (item) =>
-                        item.id === seat.id,
-                    )}
+                          isSelected={isSelected}
 
-                    disabled={
-                      seatInteractionLocked ||
-                      (
-                        selectedSeats.length >=
-                          4 &&
-                        !selectedSeats.some(
-                          (item) =>
-                            item.id ===
-                            seat.id,
-                        )
-                      )
-                    }
+                          disabled={
+                            seatInteractionLocked ||
+                            (
+                              selectedSeats.length >= 4 &&
+                              !isSelected
+                            ) ||
+                            (!matchesTier && !isSelected && !isOwned)
+                          }
 
-                    onSelect={toggleSeat}
-                  />
+                          onSelect={toggleSeat}
+                        />
+                      </div>
+                      );
+                    })}
+                  </div>
 
-                ))}
-
-              </div>
+                  <span className="text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600">{row.seats[0]?.tier || "Standard"}</span>
+                </div>
+              ))}
 
             </div>
 
@@ -792,8 +898,13 @@ function SeatSelectionPage() {
 
         )}
 
-      </section>
+        {!loading && (
+          <p className="mt-4 text-center text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700" aria-live="polite">
+            {effectiveActiveTier === "ALL" ? "Showing every section" : `Focusing ${effectiveActiveTier} seats`} · Swipe sideways on smaller screens
+          </p>
+        )}
 
+      </section>
 
       {/* LEGEND */}
       <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm sm:mt-10">
@@ -836,7 +947,7 @@ function SeatSelectionPage() {
         !loading &&
         selectedSeats.length === 0 && (
 
-          <div className="mx-auto mt-10 max-w-xl rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-center">
+          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.035] p-7 text-center">
 
             <p className="text-zinc-400">
               Select between one and four
@@ -857,7 +968,7 @@ function SeatSelectionPage() {
       {!checkoutVisible &&
         selectedSeats.length > 0 && (
 
-          <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
+          <div className="premium-panel mx-auto mt-10 max-w-2xl rounded-[2rem] p-6 sm:p-8">
 
             <div className="flex items-start justify-between gap-4">
 
@@ -871,13 +982,17 @@ function SeatSelectionPage() {
                   selected
                 </p>
 
-                <p className="mt-1 text-xl font-semibold">
+                <p className="mt-2 text-2xl font-black text-violet-200">
                   {selectedSeats
                     .map(
                       (seat) =>
                         seat.label,
                     )
                     .join(", ")}
+                </p>
+
+                <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  {[...new Set(selectedSeats.map((seat) => seat.tier || "Standard"))].join(" + ")}
                 </p>
 
               </div>
@@ -889,7 +1004,7 @@ function SeatSelectionPage() {
                   Total
                 </p>
 
-                <p className="mt-1 text-2xl font-semibold">
+                <p className="mt-1 text-3xl font-black">
                   ৳{selectedTotal}
                 </p>
 
@@ -912,7 +1027,7 @@ function SeatSelectionPage() {
                     >
 
                       <span className="text-zinc-400">
-                        Seat {seat.label}
+                        Seat {seat.label} · {seat.tier || "Standard"}
                       </span>
 
                       <span className="text-zinc-300">
@@ -938,14 +1053,17 @@ function SeatSelectionPage() {
               className="
                 mt-5
                 w-full
-                rounded-lg
-                bg-white
+                rounded-2xl
+                bg-gradient-to-r
+                from-violet-500
+                to-fuchsia-500
                 px-4
-                py-3
-                font-semibold
-                text-black
+                py-4
+                font-bold
+                text-white
                 transition
-                hover:bg-zinc-200
+                hover:brightness-110
+                hover:shadow-[0_15px_45px_rgba(139,92,246,0.25)]
                 disabled:cursor-not-allowed
                 disabled:opacity-50
                 focus-visible:outline-none
@@ -978,7 +1096,7 @@ function SeatSelectionPage() {
       {/* CHECKOUT / PAYMENT */}
       {checkoutVisible && (
 
-        <div className="mx-auto mt-10 max-w-xl">
+        <div className="mx-auto mt-10 max-w-2xl">
 
           <BookingPanel
             hold={
@@ -1004,6 +1122,8 @@ function SeatSelectionPage() {
             onPaymentStarted={
               paymentStarted
             }
+
+            show={show}
           />
 
         </div>

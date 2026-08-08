@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import apiClient, { apiErrorMessage } from "../../api/client"
 import InlineNotice from "../InlineNotice"
@@ -69,6 +69,7 @@ function BookingPanel({
   payment,
   paymentPollError,
   onPaymentStarted,
+  show,
 }) {
 
   const [phone, setPhone] = useState(hold.phone || "")
@@ -97,20 +98,35 @@ function BookingPanel({
    * ---------------------------------------------------------
    */
 
-  const holdSeatLabels =
-    hold.seatLabels?.length
+  const holdSeatLabels = useMemo(
+    () => hold.seatLabels?.length
       ? hold.seatLabels
       : hold.seatLabel
         ? [hold.seatLabel]
-        : []
+        : [],
+    [hold.seatLabel, hold.seatLabels],
+  )
 
   const heldSeatLabels = holdSeatLabels.join(", ")
+
+  const heldSeats = useMemo(
+    () => payment?.seats?.length ? payment.seats : hold.seats || [],
+    [hold.seats, payment],
+  )
 
   const holdPrice =
     hold.totalPrice ??
     hold.price ??
     payment?.amount ??
     0
+
+  const movieTitle = payment?.movieTitle ?? hold.movieTitle ?? show?.movie?.title ?? "Movie"
+  const moviePoster = payment?.moviePoster ?? hold.moviePoster ?? show?.movie?.poster ?? ""
+  const bookingShowId = payment?.showId ?? hold.showId ?? show?.id ?? null
+  const bookingMovieId = payment?.movieId ?? hold.movieId ?? show?.movie?.id ?? null
+  const cinemaHall = payment?.theatre ?? payment?.hall ?? hold.theatre ?? hold.hall ?? show?.theatre ?? show?.hall ?? "—"
+  const showTime = payment?.showTime ?? payment?.showtime ?? hold.showTime ?? hold.time ?? show?.time ?? "—"
+  const showDate = payment?.showDate ?? hold.showDate ?? hold.date ?? show?.date ?? "Today"
 
 
   const expired =
@@ -135,6 +151,7 @@ function BookingPanel({
 
     if (
       payment?.status !== "SUCCEEDED" ||
+      payment?.bookingStatus === "CANCELLED" ||
       !payment.bookingReference
     ) {
       return
@@ -155,6 +172,20 @@ function BookingPanel({
       amount:
         payment.amount ?? holdPrice,
 
+      paymentId: payment.id,
+      status: payment.bookingStatus || "CONFIRMED",
+      phone: payment.phone || hold.phone || "",
+      holdId: payment.holdId || hold.id || null,
+      seats: heldSeats,
+
+      movieTitle,
+      moviePoster,
+      showId: bookingShowId,
+      movieId: bookingMovieId,
+      theatre: cinemaHall,
+      showTime,
+      showDate,
+
       completedAt:
         new Date().toISOString(),
     }
@@ -166,7 +197,17 @@ function BookingPanel({
 
   }, [
     holdPrice,
+    hold.id,
+    hold.phone,
     holdSeatLabels,
+    heldSeats,
+    movieTitle,
+    moviePoster,
+    bookingMovieId,
+    bookingShowId,
+    cinemaHall,
+    showDate,
+    showTime,
     payment,
   ])
 
@@ -236,6 +277,22 @@ function BookingPanel({
       setBusyAction("")
 
     }
+  }
+
+
+  if (payment?.bookingStatus === "CANCELLED" || payment?.status === "CANCELLED") {
+    return (
+      <section className="rounded-[2rem] border border-rose-500/20 bg-rose-500/[0.06] p-6 sm:p-8" aria-live="polite">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-500/15 text-2xl text-rose-300">×</div>
+        <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-rose-300">Booking cancelled</p>
+        <h2 className="mt-2 text-2xl font-black">These seats have been released</h2>
+        <p className="mt-3 text-zinc-400">Your cancellation was recorded. Any applicable refund will be handled according to the cinema&apos;s policy.</p>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-black/20 p-4"><p className="text-xs text-zinc-600">Hall</p><p className="mt-1 font-bold">{cinemaHall}</p></div>
+          <div className="rounded-xl bg-black/20 p-4"><p className="text-xs text-zinc-600">Time</p><p className="mt-1 font-bold">{showTime}</p></div>
+        </div>
+      </section>
+    )
   }
 
 
@@ -514,7 +571,27 @@ function BookingPanel({
 
 
             {/* TICKET DETAILS */}
-            <div className="grid grid-cols-2 gap-6 px-5 py-6">
+            <div className="grid grid-cols-2 gap-6 px-5 py-6 sm:grid-cols-4">
+
+              <div className="col-span-2 sm:col-span-4">
+                <p className="text-xs uppercase tracking-wider text-zinc-600">Movie</p>
+                <p className="mt-1 text-xl font-semibold">{movieTitle}</p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zinc-600">Hall</p>
+                <p className="mt-1 font-semibold">{cinemaHall}</p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zinc-600">Show time</p>
+                <p className="mt-1 font-semibold">{showTime}</p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zinc-600">Show date</p>
+                <p className="mt-1 font-semibold">{showDate}</p>
+              </div>
 
               <div>
 
@@ -539,7 +616,7 @@ function BookingPanel({
               </div>
 
 
-              <div className="text-right">
+              <div>
 
                 <p
                   className="
@@ -864,12 +941,13 @@ function BookingPanel({
   return (
     <section
       className="
-        rounded-2xl
+        premium-panel
+        rounded-[2rem]
         border
         border-zinc-800
-        bg-zinc-900
-        p-5
-        sm:p-6
+        bg-[#111118]
+        p-6
+        sm:p-8
       "
     >
 
@@ -966,6 +1044,35 @@ function BookingPanel({
 
       </div>
 
+
+      <dl className="mt-5 grid grid-cols-2 gap-3 border-b border-zinc-800 pb-5 lg:grid-cols-4">
+        <div className="col-span-2 rounded-xl bg-white/[0.035] px-4 py-3 lg:col-span-1">
+          <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Movie</dt>
+          <dd className="mt-1 truncate font-semibold text-zinc-300">{movieTitle}</dd>
+        </div>
+        <div className="rounded-xl bg-white/[0.035] px-4 py-3">
+          <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Date</dt>
+          <dd className="mt-1 truncate font-semibold text-zinc-300">{showDate}</dd>
+        </div>
+        <div className="rounded-xl bg-white/[0.035] px-4 py-3">
+          <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Hall</dt>
+          <dd className="mt-1 font-semibold text-zinc-300">{cinemaHall}</dd>
+        </div>
+        <div className="rounded-xl bg-white/[0.035] px-4 py-3">
+          <dt className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Time</dt>
+          <dd className="mt-1 font-semibold text-zinc-300">{showTime}</dd>
+        </div>
+      </dl>
+
+      {heldSeats.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {heldSeats.map((seat) => (
+            <span key={seat.id || seat.label} className="rounded-full border border-violet-400/15 bg-violet-500/[0.08] px-3 py-1.5 text-xs text-zinc-400">
+              <strong className="text-zinc-200">{seat.label}</strong> · {seat.tier || "Standard"} · ৳{seat.price}
+            </span>
+          ))}
+        </div>
+      )}
 
       {expired ? (
 
@@ -1301,14 +1408,17 @@ function BookingPanel({
             }
             className="
               w-full
-              rounded-lg
-              bg-emerald-400
+              rounded-2xl
+              bg-gradient-to-r
+              from-violet-500
+              to-fuchsia-500
               px-4
-              py-3.5
+              py-4
               font-bold
-              text-emerald-950
+              text-white
               transition
-              hover:bg-emerald-300
+              hover:brightness-110
+              hover:shadow-[0_15px_45px_rgba(139,92,246,0.25)]
               disabled:cursor-not-allowed
               disabled:opacity-40
               focus-visible:outline-none

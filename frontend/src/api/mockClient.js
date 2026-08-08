@@ -1,4 +1,4 @@
-const STORAGE_KEY = "cinemaseat:mock-api:v1"
+const STORAGE_KEY = "cinemaseat:mock-api:v2"
 const HOLD_DURATION_MS = 90_000
 const PAYMENT_DELAY_MS = 4_000
 const DEMO_OTP = "123456"
@@ -11,6 +11,7 @@ const movies = [
     duration: "2h 18m",
     rating: "PG-13",
     poster: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba",
+    description: "A new threat pulls a young hero back into a city that has almost forgotten what hope looks like.",
   },
   {
     id: 2,
@@ -19,6 +20,7 @@ const movies = [
     duration: "2h 6m",
     rating: "PG-13",
     poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1",
+    description: "A stranded crew follows an impossible signal beyond the edge of mapped space.",
   },
   {
     id: 3,
@@ -27,6 +29,61 @@ const movies = [
     duration: "1h 54m",
     rating: "R",
     poster: "https://images.unsplash.com/photo-1485846234645-a62644f84728",
+    description: "One sleepless night, one missing witness, and a city full of people with something to hide.",
+  },
+  {
+    id: 4,
+    title: "Echoes of Tomorrow",
+    genre: "Sci-Fi • Mystery",
+    duration: "2h 11m",
+    rating: "PG-13",
+    poster: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+    description: "A physicist begins receiving messages from a future that insists it can still be changed.",
+  },
+  {
+    id: 5,
+    title: "The Last Monsoon",
+    genre: "Drama • Romance",
+    duration: "1h 58m",
+    rating: "PG",
+    poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c",
+    description: "Two childhood friends reunite during a storm that brings old promises back to the surface.",
+  },
+  {
+    id: 6,
+    title: "Neon Pursuit",
+    genre: "Action • Thriller",
+    duration: "1h 49m",
+    rating: "R",
+    poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1",
+    description: "A courier with one final delivery races through the city while every syndicate closes in.",
+  },
+  {
+    id: 7,
+    title: "Kingdom of Ash",
+    genre: "Fantasy • Adventure",
+    duration: "2h 27m",
+    rating: "PG-13",
+    poster: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570",
+    description: "The last heir to a ruined kingdom must cross forbidden lands to wake an ancient guardian.",
+  },
+  {
+    id: 8,
+    title: "Laugh Track",
+    genre: "Comedy • Drama",
+    duration: "1h 42m",
+    rating: "PG-13",
+    poster: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819",
+    description: "A struggling comedian accidentally becomes famous for the one joke he never meant to tell.",
+  },
+  {
+    id: 9,
+    title: "Silent Depths",
+    genre: "Horror • Mystery",
+    duration: "1h 51m",
+    rating: "R",
+    poster: "https://images.unsplash.com/photo-1543536448-d209d2d13a1c",
+    description: "A deep-sea research team discovers that the sound beneath their station is getting closer.",
   },
 ]
 
@@ -37,35 +94,52 @@ const originalShowtimes = [
   { id: 104, time: "11:59 PM", theatre: "Hall 2" },
 ]
 
+const showDateLabel = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+}).format(new Date())
+
 const showtimes = movies.flatMap((movie, movieIndex) =>
   originalShowtimes.map((show, showIndex) => ({
     ...show,
     id: (movieIndex + 1) * 100 + showIndex + 1,
     movieId: movie.id,
-    date: "Today",
+    date: showDateLabel,
   })),
 )
 
+const bookedSeatIds = new Set([3, 12, 18, 27, 28, 44, 45, 61, 68, 77])
+const externallyHeldSeatIds = new Set([6, 19, 34, 37, 53, 72])
+
 const originalSeats = [
-  { id: 1, label: "A1", status: "AVAILABLE", price: 450 },
-  { id: 2, label: "A2", status: "AVAILABLE", price: 450 },
-  { id: 3, label: "A3", status: "BOOKED", price: 450 },
-  { id: 4, label: "A4", status: "AVAILABLE", price: 450 },
-  { id: 5, label: "A5", status: "HELD", price: 450 },
-  { id: 6, label: "A6", status: "AVAILABLE", price: 450 },
-  { id: 7, label: "B1", status: "AVAILABLE", price: 450 },
-  { id: 8, label: "B2", status: "AVAILABLE", price: 450 },
-  { id: 9, label: "B3", status: "AVAILABLE", price: 450 },
-  { id: 10, label: "B4", status: "AVAILABLE", price: 450 },
-  { id: 11, label: "B5", status: "BOOKED", price: 450 },
-  { id: 12, label: "B6", status: "AVAILABLE", price: 450 },
-  { id: 13, label: "C1", status: "AVAILABLE", price: 500 },
-  { id: 14, label: "C2", status: "AVAILABLE", price: 500 },
-  { id: 15, label: "C3", status: "AVAILABLE", price: 500 },
-  { id: 16, label: "C4", status: "AVAILABLE", price: 500 },
-  { id: 17, label: "C5", status: "AVAILABLE", price: 500 },
-  { id: 18, label: "C6", status: "AVAILABLE", price: 500 },
-]
+  { row: "A", tier: "Standard", price: 350 },
+  { row: "B", tier: "Standard", price: 350 },
+  { row: "C", tier: "Classic", price: 450 },
+  { row: "D", tier: "Classic", price: 450 },
+  { row: "E", tier: "Premium", price: 500 },
+  { row: "F", tier: "Premium", price: 500 },
+  { row: "G", tier: "VIP", price: 600 },
+  { row: "H", tier: "VIP", price: 600 },
+].flatMap(({ row, tier, price }, rowIndex) =>
+  Array.from({ length: 10 }, (_, columnIndex) => {
+    const id = rowIndex * 10 + columnIndex + 1
+    return {
+      id,
+      row,
+      column: columnIndex + 1,
+      label: `${row}${columnIndex + 1}`,
+      tier,
+      price,
+      status: bookedSeatIds.has(id)
+        ? "BOOKED"
+        : externallyHeldSeatIds.has(id)
+          ? "HELD"
+          : "AVAILABLE",
+    }
+  }),
+)
 
 function initialState() {
   return { holds: {}, payments: {} }
@@ -125,10 +199,13 @@ function updateState() {
       payment.error = "The seat hold expired before payment completed."
     } else if (payment.outcome === "FAILED") {
       payment.status = "FAILED"
+      payment.bookingStatus = "FAILED"
       payment.error = "The demo payment gateway declined this transaction."
     } else {
       payment.status = "SUCCEEDED"
+      payment.bookingStatus = "CONFIRMED"
       payment.bookingReference = `CS-${payment.id.slice(-8).toUpperCase()}`
+      payment.completedAt = payment.updatedAt
       hold.status = "COMPLETED"
     }
   })
@@ -184,14 +261,22 @@ async function request(method, path, body) {
     }
     const seatLabels = requestedSeats.map((seat) => seat.label)
     const totalPrice = requestedSeats.reduce((total, seat) => total + seat.price, 0)
+    const movie = movies.find((item) => item.id === show.movieId)
     const hold = {
       id: makeId("hold"),
       showId: show.id,
       seatIds: requestedSeats.map((seat) => seat.id),
       seatLabels,
       seatLabel: seatLabels.join(", "),
+      seats: requestedSeats.map(({ id, label, tier, price }) => ({ id, label, tier, price })),
       totalPrice,
       price: totalPrice,
+      movieId: movie.id,
+      movieTitle: movie.title,
+      moviePoster: movie.poster,
+      theatre: show.theatre,
+      showTime: show.time,
+      showDate: show.date,
       status: "ACTIVE",
       expiresAt: new Date(Date.now() + HOLD_DURATION_MS).toISOString(),
       phone: null,
@@ -249,11 +334,19 @@ async function request(method, path, body) {
       id: makeId("payment"),
       holdId: hold.id,
       showId: hold.showId,
+      movieId: hold.movieId,
+      movieTitle: hold.movieTitle,
+      moviePoster: hold.moviePoster,
+      theatre: hold.theatre,
+      showTime: hold.showTime,
+      showDate: hold.showDate,
       seatLabels: hold.seatLabels || [hold.seatLabel],
       seatLabel: hold.seatLabel,
+      seats: hold.seats || [],
       amount: hold.totalPrice ?? hold.price,
       phone: hold.phone,
       status: "PENDING",
+      bookingStatus: "PENDING",
       outcome: String(body.phone).endsWith("0000") ? "FAILED" : "SUCCEEDED",
       createdAt: now,
       updatedAt: now,
@@ -261,6 +354,41 @@ async function request(method, path, body) {
     state.payments[payment.id] = payment
     writeState(state)
     return { data: { payment: clone(payment) } }
+  }
+
+  const cancelBookingMatch = normalizedPath.match(/^\/bookings\/([^/]+)\/cancel$/)
+  if (method === "POST" && cancelBookingMatch) {
+    const bookingKey = decodeURIComponent(cancelBookingMatch[1])
+    const payment = Object.values(state.payments).find(
+      (item) => item.id === bookingKey || item.bookingReference === bookingKey,
+    )
+
+    if (!payment) throw apiError(404, "Booking not found")
+    if (payment.bookingStatus === "CANCELLED") return { data: { booking: clone(payment) } }
+    if (payment.status !== "SUCCEEDED" || (payment.bookingStatus && payment.bookingStatus !== "CONFIRMED")) {
+      throw apiError(409, "Only a confirmed booking can be cancelled.", "BOOKING_NOT_CONFIRMED")
+    }
+
+    const hold = state.holds[payment.holdId]
+    payment.bookingStatus = "CANCELLED"
+    payment.cancelledAt = new Date().toISOString()
+    payment.refundStatus = "PROCESSING"
+    payment.refundAmount = payment.amount
+    payment.updatedAt = payment.cancelledAt
+    if (hold) hold.status = "CANCELLED"
+
+    writeState(state)
+    return { data: { booking: clone(payment) } }
+  }
+
+  const bookingMatch = normalizedPath.match(/^\/bookings\/([^/]+)$/)
+  if (method === "GET" && bookingMatch) {
+    const bookingKey = decodeURIComponent(bookingMatch[1])
+    const payment = Object.values(state.payments).find(
+      (item) => item.id === bookingKey || item.bookingReference === bookingKey,
+    )
+    if (!payment) throw apiError(404, "Booking not found")
+    return { data: { booking: clone(payment) } }
   }
 
   const paymentMatch = normalizedPath.match(/^\/payments\/([^/]+)$/)

@@ -16,10 +16,10 @@ import heroImage from "../assets/hero.png"
  */
 function MovieCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+    <div className="overflow-hidden rounded-[1.5rem] border border-zinc-800 bg-zinc-900">
 
       {/* Poster placeholder */}
-      <div className="aspect-[2/3] animate-pulse bg-zinc-800" />
+      <div className="aspect-[5/6] animate-pulse bg-zinc-800" />
 
       <div className="space-y-3 p-5">
 
@@ -111,14 +111,31 @@ function HomePage() {
    */
 
   useEffect(() => {
+    let active = true
 
-    loadMovies()
+    async function loadInitialMovies() {
+      try {
+        const { data } = await apiClient.get("/movies")
+        if (active) setMovies(data.movies || data || [])
+      } catch (loadError) {
+        if (active) {
+          setError(apiErrorMessage(loadError, "Movies could not be loaded."))
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
 
-  }, [loadMovies])
+    loadInitialMovies()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto max-w-[1440px] px-5 py-8 sm:px-8 sm:py-12 lg:px-10">
 
 
       {/* =====================================================
@@ -128,16 +145,14 @@ function HomePage() {
       <section
         className="
           relative
-          mb-14
+          premium-panel
+          mb-16
           overflow-hidden
-          rounded-3xl
-          border
-          border-zinc-800
-          bg-zinc-900
+          rounded-[2.5rem]
         "
       >
 
-        <div className="grid min-h-[420px] md:grid-cols-2">
+        <div className="grid min-h-[500px] lg:grid-cols-[1.12fr_0.88fr]">
 
 
           {/* HERO TEXT */}
@@ -151,8 +166,8 @@ function HomePage() {
               justify-center
               p-7
               sm:p-10
-              md:p-12
-              lg:p-14
+              lg:p-12
+              xl:p-14
             "
           >
 
@@ -165,8 +180,8 @@ function HomePage() {
                 gap-2
                 rounded-full
                 border
-                border-zinc-700
-                bg-zinc-950/60
+                border-violet-400/20
+                bg-violet-500/10
                 px-3
                 py-1.5
               "
@@ -182,7 +197,7 @@ function HomePage() {
                     w-full
                     animate-ping
                     rounded-full
-                    bg-green-400
+                    bg-emerald-400
                     opacity-50
                   "
                 />
@@ -194,7 +209,7 @@ function HomePage() {
                     h-2
                     w-2
                     rounded-full
-                    bg-green-400
+                    bg-emerald-400
                   "
                 />
 
@@ -216,26 +231,27 @@ function HomePage() {
                 text-zinc-500
               "
             >
-              CinemaSeat
+              Your next movie night
             </p>
 
 
             <h1
               className="
                 mt-4
-                max-w-xl
+                max-w-3xl
                 text-4xl
-                font-bold
+                font-black
                 tracking-tight
                 sm:text-5xl
                 lg:text-6xl
+                xl:text-7xl
               "
             >
-              Your seat.
+              Big screen.
               <br />
 
-              <span className="text-zinc-400">
-                Before someone else gets it.
+              <span className="gradient-text">
+                Your perfect seat.
               </span>
 
             </h1>
@@ -261,15 +277,18 @@ function HomePage() {
               <a
                 href="#now-showing"
                 className="
-                  rounded-lg
-                  bg-white
-                  px-5
-                  py-3
+                  rounded-2xl
+                  bg-gradient-to-r
+                  from-violet-500
+                  to-fuchsia-500
+                  px-6
+                  py-3.5
                   text-sm
-                  font-semibold
-                  text-black
+                  font-bold
+                  text-white
                   transition
-                  hover:bg-zinc-200
+                  hover:brightness-110
+                  hover:shadow-[0_15px_45px_rgba(139,92,246,0.3)]
                   focus-visible:outline-none
                   focus-visible:ring-2
                   focus-visible:ring-white
@@ -277,12 +296,13 @@ function HomePage() {
                   focus-visible:ring-offset-zinc-900
                 "
               >
-                Browse movies
+                Explore movies →
               </a>
 
 
-              <div className="text-sm text-zinc-500">
-                Live seat availability
+              <div className="flex items-center gap-2 text-sm text-zinc-400">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5">✓</span>
+                No account required
               </div>
 
             </div>
@@ -292,12 +312,14 @@ function HomePage() {
 
           {/* HERO IMAGE */}
 
-          <div className="relative min-h-[300px] md:min-h-full">
+          <div className="relative min-h-[320px] overflow-hidden lg:min-h-full">
+
+            <div className="absolute inset-10 rounded-full bg-violet-600/20 blur-[90px]" />
 
             <img
               src={heroImage}
               alt="Cinema experience"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-contain p-14 drop-shadow-[0_35px_70px_rgba(124,58,237,0.4)] sm:p-20 lg:p-16 xl:p-20"
             />
 
 
@@ -308,15 +330,25 @@ function HomePage() {
                 absolute
                 inset-0
                 bg-gradient-to-t
-                from-zinc-900
+                from-[#111118]
                 via-transparent
                 to-transparent
-                md:bg-gradient-to-r
-                md:from-zinc-900
-                md:via-zinc-900/20
-                md:to-transparent
+                lg:bg-gradient-to-r
+                lg:from-[#111118]
+                lg:via-[#111118]/20
+                lg:to-transparent
               "
             />
+
+            <div className="absolute bottom-8 left-8 right-8 flex items-center justify-between rounded-2xl border border-white/10 bg-black/45 p-4 backdrop-blur-xl sm:bottom-10 sm:left-10 sm:right-10">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Booking experience</p>
+                <p className="mt-1 font-bold">Fast. Live. Stress-free.</p>
+              </div>
+              <div className="flex -space-x-2">
+                {["A1", "A2", "A3"].map((seat) => <span key={seat} className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#111118] bg-violet-500 text-[10px] font-bold">{seat}</span>)}
+              </div>
+            </div>
 
           </div>
 
@@ -333,7 +365,7 @@ function HomePage() {
 
         <div
           className="
-            mb-8
+            mb-10
             flex
             flex-col
             justify-between
@@ -362,12 +394,12 @@ function HomePage() {
               className="
                 mt-2
                 text-3xl
-                font-bold
+                font-black
                 tracking-tight
                 sm:text-4xl
               "
             >
-              Pick a movie
+              What are we watching?
             </h2>
 
 
@@ -452,13 +484,14 @@ function HomePage() {
             gap-6
             sm:grid-cols-2
             lg:grid-cols-3
+            xl:grid-cols-4
           "
           aria-busy={loading}
         >
 
           {loading
             ? Array.from(
-                { length: 6 },
+                { length: 3 },
                 (_, index) => (
                   <MovieCardSkeleton
                     key={index}
@@ -538,22 +571,22 @@ function HomePage() {
 
       <section
         className="
-          mt-20
+          mt-24
           grid
           gap-px
           overflow-hidden
-          rounded-2xl
+          rounded-[2rem]
           border
-          border-zinc-800
-          bg-zinc-800
+          border-white/10
+          bg-white/10
           sm:grid-cols-3
         "
       >
 
-        <div className="bg-zinc-950 p-6">
+        <div className="bg-[#0d0d14] p-8">
 
-          <p className="font-semibold">
-            Live availability
+          <p className="text-lg font-bold">
+            <span className="mr-3 text-violet-400">01</span> Live availability
           </p>
 
           <p className="mt-2 text-sm leading-6 text-zinc-500">
@@ -563,10 +596,10 @@ function HomePage() {
         </div>
 
 
-        <div className="bg-zinc-950 p-6">
+        <div className="bg-[#0d0d14] p-8">
 
-          <p className="font-semibold">
-            Temporary seat holds
+          <p className="text-lg font-bold">
+            <span className="mr-3 text-fuchsia-400">02</span> Temporary seat holds
           </p>
 
           <p className="mt-2 text-sm leading-6 text-zinc-500">
@@ -577,10 +610,10 @@ function HomePage() {
         </div>
 
 
-        <div className="bg-zinc-950 p-6">
+        <div className="bg-[#0d0d14] p-8">
 
-          <p className="font-semibold">
-            Clear booking status
+          <p className="text-lg font-bold">
+            <span className="mr-3 text-rose-400">03</span> Clear booking status
           </p>
 
           <p className="mt-2 text-sm leading-6 text-zinc-500">

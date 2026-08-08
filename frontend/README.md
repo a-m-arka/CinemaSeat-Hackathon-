@@ -1,6 +1,6 @@
 # CinemaSeat frontend
 
-React/Vite booking UI for movie discovery, seat holds, phone verification, and asynchronous payment confirmation. The original movies, showtimes, and seat map are included in the frontend demo, so it runs without a backend.
+React/Vite booking UI for movie discovery, seat holds, phone verification, and asynchronous payment confirmation. The frontend demo includes an 80-seat auditorium with separate halls, show times, a center aisle, and tier pricing, so it runs without a backend.
 
 ## Configuration
 
@@ -27,8 +27,9 @@ The backend should expose these routes below the configured base URL:
 - `GET /holds/:holdId`
 - `POST /holds/:holdId/otp/request`, `/otp/resend`, and `/otp/verify`
 - `POST /payments`, `GET /payments/:paymentId`
+- `GET /bookings/:bookingReference`, `POST /bookings/:bookingReference/cancel`
 
-The hold request sends `seatIds` with one to four IDs. Hold responses should return `seatIds`, `seatLabels`, the combined `price` (or `totalPrice`), and an ISO-8601 `expiresAt`; the frontend never invents a countdown. Payment responses use `PENDING`, `SUCCEEDED`, or `FAILED`.
+The hold request sends `seatIds` with one to four IDs. Hold responses should return `seatIds`, `seatLabels`, per-seat snapshots containing `tier` and `price`, the combined `price` (or `totalPrice`), and an ISO-8601 `expiresAt`; the frontend never invents a countdown. To keep the final ticket complete after refresh, hold and payment responses should also snapshot `showId`, `movieId`, `movieTitle`, `theatre`, `showTime`, and `showDate`. Payment responses use `PENDING`, `SUCCEEDED`, or `FAILED`; booking status uses `CONFIRMED` or `CANCELLED`. A successful cancellation should return its refund status and release the completed hold.
 
 ## Docker Compose
 

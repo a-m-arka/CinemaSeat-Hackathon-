@@ -74,7 +74,7 @@ function MoviePage() {
    */
   if (loading) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+      <main className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 lg:px-10">
 
         <div className="animate-pulse">
 
@@ -131,9 +131,19 @@ function MoviePage() {
     )
   }
 
+  const showtimeGroups = showtimes.reduce((groups, show) => {
+    const hallName = show.theatre || show.hall || "Cinema Hall"
+    const existingGroup = groups.find((group) => group.hall === hallName)
+
+    if (existingGroup) existingGroup.shows.push(show)
+    else groups.push({ hall: hallName, shows: [show] })
+
+    return groups
+  }, [])
+
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 lg:px-10">
 
       {/* BACK LINK */}
       <Link
@@ -158,9 +168,15 @@ function MoviePage() {
       {/* =====================================================
           MOVIE HERO
           ===================================================== */}
-      <section className="mt-8">
+      <section className="premium-panel relative mt-8 overflow-hidden rounded-[2.5rem] p-6 sm:p-10 lg:p-14">
 
-        <div className="grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[260px_1fr]">
+        {movie?.poster && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.08]">
+            <img src={movie.poster} alt="" className="h-full w-full scale-125 object-cover blur-3xl" />
+          </div>
+        )}
+
+        <div className="relative grid gap-10 md:grid-cols-[280px_1fr] lg:grid-cols-[340px_1fr] lg:gap-16">
 
 
           {/* MOVIE POSTER */}
@@ -173,11 +189,11 @@ function MoviePage() {
                 className="
                   aspect-[2/3]
                   w-full
-                  rounded-2xl
+                  rounded-[2rem]
                   border
                   border-zinc-800
                   object-cover
-                  shadow-2xl
+                  shadow-[0_35px_80px_rgba(0,0,0,0.5)]
                 "
               />
             ) : (
@@ -221,11 +237,11 @@ function MoviePage() {
               className="
                 mt-3
                 max-w-3xl
-                text-4xl
-                font-bold
+                  text-5xl
+                  font-black
                 tracking-tight
-                sm:text-5xl
-                lg:text-6xl
+                  sm:text-6xl
+                  lg:text-7xl
               "
             >
               {movie?.title || "Untitled movie"}
@@ -240,10 +256,10 @@ function MoviePage() {
                   className="
                     rounded-full
                     border
-                    border-zinc-700
-                    bg-zinc-900
-                    px-3
-                    py-1.5
+                    border-violet-400/20
+                    bg-violet-500/10
+                    px-4
+                    py-2
                     text-sm
                     text-zinc-300
                   "
@@ -257,10 +273,10 @@ function MoviePage() {
                   className="
                     rounded-full
                     border
-                    border-zinc-700
-                    bg-zinc-900
-                    px-3
-                    py-1.5
+                    border-violet-400/20
+                    bg-violet-500/10
+                    px-4
+                    py-2
                     text-sm
                     text-zinc-300
                   "
@@ -322,7 +338,7 @@ function MoviePage() {
       {/* =====================================================
           SHOWTIMES
           ===================================================== */}
-      <section className="mt-14 border-t border-zinc-800 pt-10">
+      <section className="mt-20 border-t border-white/10 pt-12">
 
         <div
           className="
@@ -349,7 +365,7 @@ function MoviePage() {
               Available today
             </p>
 
-            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
+            <h2 className="mt-2 text-3xl font-black sm:text-5xl">
               Choose a showtime
             </h2>
 
@@ -376,85 +392,43 @@ function MoviePage() {
         {/* SHOWTIME CARDS */}
         {showtimes.length > 0 ? (
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-            {showtimes.map((show) => (
-
-              <Link
-                key={show.id}
-                to={`/show/${show.id}/seats`}
-                className="
-                  group
-                  rounded-2xl
-                  border
-                  border-zinc-800
-                  bg-zinc-900
-                  p-5
-                  transition
-                  hover:-translate-y-1
-                  hover:border-zinc-600
-                  hover:bg-zinc-800/80
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-white
-                "
-              >
-
-                <div className="flex items-start justify-between gap-4">
-
-                  <div>
-
-                    <p
-                      className="
-                        text-2xl
-                        font-semibold
-                        tracking-tight
-                      "
-                    >
-                      {show.time}
-                    </p>
-
-
-                    <p className="mt-2 text-sm text-zinc-400">
-                      {show.theatre || "Cinema Hall"}
-                    </p>
-
-
-                    {show.date && (
-                      <p className="mt-1 text-xs text-zinc-600">
-                        {show.date}
-                      </p>
-                    )}
-
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            {showtimeGroups.map((group, groupIndex) => (
+              <section key={group.hall} className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.025]">
+                <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.035] px-6 py-5">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/15 font-black text-violet-300">{String(groupIndex + 1).padStart(2, "0")}</span>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-600">Cinema hall</p>
+                      <h3 className="mt-1 text-xl font-black">{group.hall}</h3>
+                    </div>
                   </div>
-
-
-                  <span
-                    className="
-                      text-zinc-600
-                      transition
-                      group-hover:translate-x-1
-                      group-hover:text-white
-                    "
-                  >
-                    →
-                  </span>
-
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live</span>
                 </div>
 
-
-                <div className="mt-5 border-t border-zinc-800 pt-4">
-
-                  <p className="text-xs text-zinc-500">
-                    View seats
-                  </p>
-
+                <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
+                  {group.shows.map((show) => (
+                    <Link
+                      key={show.id}
+                      to={`/show/${show.id}/seats`}
+                      className="group rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:-translate-y-1 hover:border-violet-400/40 hover:bg-violet-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">Show time</p>
+                          <p className="mt-2 text-3xl font-black tracking-tight">{show.time}</p>
+                        </div>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition group-hover:bg-violet-500 group-hover:text-white">→</span>
+                      </div>
+                      <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-xs">
+                        <span className="text-zinc-500">{show.date || "Today"}</span>
+                        <span className="font-semibold text-violet-300">Choose seats</span>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-
-              </Link>
-
+              </section>
             ))}
-
           </div>
 
         ) : (
