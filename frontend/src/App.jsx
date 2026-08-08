@@ -7,6 +7,8 @@ import {
 import Navbar from "./components/Navbar"
 import HomePage from "./pages/HomePage"
 import MoviePage from "./pages/MoviePage"
+import SeatSelectionPage from "./pages/SeatSelectionPage"
+
 
 function App() {
   return (
@@ -26,6 +28,11 @@ function App() {
           <Route
             path="/movie/:movieId"
             element={<MoviePage />}
+          />
+
+          <Route
+            path="/show/:showId/seats"
+            element={<SeatSelectionPage />}
           />
 
         </Routes>
