@@ -1,6 +1,7 @@
 const express = require('express');
 const { getBooking } = require('../controllers/bookingController');
 const {
+  cancelBooking,
   sendBookingOtp,
   verifyBookingOtp,
   startBookingPayment,
@@ -10,6 +11,7 @@ const {
 const router = express.Router();
 
 router.get('/:bookingRef', getBooking);
+router.post('/:bookingRef/cancel', cancelBooking);
 router.post('/:bookingRef/otp/send', sendBookingOtp);
 router.post('/:bookingRef/otp/verify', verifyBookingOtp);
 router.post('/:bookingRef/pay', startBookingPayment);

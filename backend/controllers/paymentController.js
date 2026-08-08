@@ -1,21 +1,26 @@
+const crypto = require('crypto');
 const Booking = require('../models/Booking');
 const ShowSeat = require('../models/ShowSeat');
 const gatewayClient = require('../services/gatewayClient');
+const {
+  bookingSeatIds,
+  paymentToJSON,
+} = require('../services/cinemaPresenter');
 const {
   PAYMENT_CURRENCY,
   PAYMENT_CALLBACK_URL,
 } = require('../config/env');
 
-const bookingFields = 'bookingRef showId seatId amount phone status paymentId paymentStatus holdExpiresAt createdAt updatedAt -_id';
+const bookingFields = 'bookingRef showId seatId seatIds seats amount phone status paymentId paymentStatus holdExpiresAt verificationToken movieId movieTitle moviePoster theatre showTime showDate createdAt updatedAt -_id';
 
 const getBookingRef = (req) => (
   typeof req.params.bookingRef === 'string' ? req.params.bookingRef.trim() : ''
 );
 
-const releaseSeat = (booking, statuses) => ShowSeat.updateOne(
+const releaseSeat = (booking, statuses) => ShowSeat.updateMany(
   {
     showId: booking.showId,
-    seatId: booking.seatId,
+    seatId: { $in: bookingSeatIds(booking) },
     bookingRef: booking.bookingRef,
     status: { $in: statuses },
   },
@@ -113,13 +118,19 @@ const verifyBookingOtp = async (req, res, next) => {
       });
     }
 
+    const verificationToken = crypto.randomUUID();
     const booking = await Booking.findOneAndUpdate(
       {
         bookingRef,
         status: 'HELD',
         holdExpiresAt: { $gt: new Date() },
       },
-      { $set: { status: 'OTP_VERIFIED' } },
+      {
+        $set: {
+          status: 'OTP_VERIFIED',
+          verificationToken,
+        },
+      },
       { new: true }
     )
       .select(bookingFields)
@@ -132,7 +143,11 @@ const verifyBookingOtp = async (req, res, next) => {
       });
     }
 
-    return res.status(200).json(booking);
+    return res.status(200).json({
+      verified: true,
+      verificationToken,
+      booking,
+    });
   } catch (error) {
     return next(error);
   }
@@ -171,21 +186,25 @@ const startBookingPayment = async (req, res, next) => {
       });
     }
 
-    const protectedSeat = await ShowSeat.findOneAndUpdate(
+    const seatIds = bookingSeatIds(booking);
+    const protectedSeats = await ShowSeat.updateMany(
       {
         showId: booking.showId,
-        seatId: booking.seatId,
+        seatId: { $in: seatIds },
         bookingRef,
         status: 'HELD',
       },
-      { $set: { holdExpiresAt: null } },
-      { new: true }
+      { $set: { holdExpiresAt: null } }
     );
 
-    if (!protectedSeat) {
+    if (protectedSeats.matchedCount !== seatIds.length) {
       await Booking.updateOne(
         { bookingRef, status: 'PAYMENT_PENDING', paymentStatus: 'PENDING' },
         { $set: { status: 'OTP_VERIFIED', paymentStatus: 'NONE' } }
+      );
+      await ShowSeat.updateMany(
+        { showId: booking.showId, seatId: { $in: seatIds }, bookingRef, status: 'HELD' },
+        { $set: { holdExpiresAt: booking.holdExpiresAt } }
       );
 
       return res.status(409).json({
@@ -223,15 +242,19 @@ const startBookingPayment = async (req, res, next) => {
       });
     }
 
-    await Booking.updateOne(
+    let updatedBooking = await Booking.findOneAndUpdate(
       { bookingRef, status: 'PAYMENT_PENDING', paymentStatus: 'PENDING' },
-      { $set: { paymentId } }
+      { $set: { paymentId } },
+      { new: true }
     );
+
+    if (!updatedBooking) updatedBooking = await Booking.findOne({ bookingRef });
 
     return res.status(202).json({
       bookingRef,
       paymentId,
       status: gatewayResponse.data.status || 'PENDING',
+      payment: paymentToJSON(updatedBooking || { ...booking.toObject(), paymentId }),
     });
   } catch (error) {
     return next(error);
@@ -275,10 +298,11 @@ const handlePaymentCallback = async (req, res, next) => {
         return res.status(409).json({ message: 'Booking is not awaiting payment' });
       }
 
-      const bookedSeat = await ShowSeat.findOneAndUpdate(
+      const seatIds = bookingSeatIds(booking);
+      await ShowSeat.updateMany(
         {
           showId: booking.showId,
-          seatId: booking.seatId,
+          seatId: { $in: seatIds },
           bookingRef,
           status: 'HELD',
         },
@@ -287,21 +311,18 @@ const handlePaymentCallback = async (req, res, next) => {
             status: 'BOOKED',
             holdExpiresAt: null,
           },
-        },
-        { new: true }
+        }
       );
 
-      if (!bookedSeat) {
-        const alreadyBooked = await ShowSeat.exists({
-          showId: booking.showId,
-          seatId: booking.seatId,
-          bookingRef,
-          status: 'BOOKED',
-        });
+      const bookedSeatCount = await ShowSeat.countDocuments({
+        showId: booking.showId,
+        seatId: { $in: seatIds },
+        bookingRef,
+        status: 'BOOKED',
+      });
 
-        if (!alreadyBooked) {
-          return res.status(409).json({ message: 'Seat is no longer owned by this booking' });
-        }
+      if (bookedSeatCount !== seatIds.length) {
+        return res.status(409).json({ message: 'One or more seats are no longer owned by this booking' });
       }
 
       booking = await Booking.findOneAndUpdate(
@@ -359,6 +380,7 @@ const handlePaymentCallback = async (req, res, next) => {
         {
           $set: {
             paymentStatus: 'REFUNDED',
+            refundStatus: 'SUCCEEDED',
             paymentId,
             gatewayEventId: eventId,
           },
@@ -377,6 +399,130 @@ const handlePaymentCallback = async (req, res, next) => {
       bookingRef,
       status: booking.paymentStatus,
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const requestHoldOtp = (req, res, next) => {
+  req.params.bookingRef = req.params.holdId;
+  return sendBookingOtp(req, res, next);
+};
+
+const verifyHoldOtp = (req, res, next) => {
+  req.params.bookingRef = req.params.holdId;
+  return verifyBookingOtp(req, res, next);
+};
+
+const startPayment = async (req, res, next) => {
+  const holdId = typeof req.body?.holdId === 'string' ? req.body.holdId.trim() : '';
+  const verificationToken = typeof req.body?.verificationToken === 'string'
+    ? req.body.verificationToken.trim()
+    : '';
+
+  if (!holdId || !verificationToken) {
+    return res.status(400).json({ message: 'holdId and verificationToken are required' });
+  }
+
+  try {
+    const verifiedBooking = await Booking.exists({
+      bookingRef: holdId,
+      status: 'OTP_VERIFIED',
+      verificationToken,
+      holdExpiresAt: { $gt: new Date() },
+    });
+
+    if (!verifiedBooking) {
+      return res.status(403).json({ message: 'Verify your phone before payment' });
+    }
+
+    req.params.bookingRef = holdId;
+    return startBookingPayment(req, res, next);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const getPayment = async (req, res, next) => {
+  const paymentId = typeof req.params.paymentId === 'string' ? req.params.paymentId.trim() : '';
+  if (!paymentId) return res.status(400).json({ message: 'paymentId is required' });
+
+  try {
+    const booking = await Booking.findOne({ paymentId });
+    if (!booking) return res.status(404).json({ message: 'Payment not found' });
+    return res.status(200).json({ payment: paymentToJSON(booking) });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const cancelBooking = async (req, res, next) => {
+  const bookingReference = typeof req.params.bookingRef === 'string'
+    ? req.params.bookingRef.trim()
+    : '';
+
+  if (!bookingReference) {
+    return res.status(400).json({ message: 'bookingReference is required' });
+  }
+
+  try {
+    const booking = await Booking.findOneAndUpdate(
+      {
+        $or: [
+          { bookingRef: bookingReference },
+          { paymentId: bookingReference },
+        ],
+        status: 'CONFIRMED',
+        paymentStatus: 'SUCCEEDED',
+        paymentId: { $ne: null },
+      },
+      {
+        $set: {
+          status: 'CANCELLED',
+          paymentStatus: 'PENDING',
+          refundStatus: 'PENDING',
+          cancelledAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!booking) {
+      const existing = await Booking.findOne({
+        $or: [
+          { bookingRef: bookingReference },
+          { paymentId: bookingReference },
+        ],
+      });
+
+      return res.status(existing ? 409 : 404).json({
+        code: existing ? 'BOOKING_NOT_CONFIRMED' : 'BOOKING_NOT_FOUND',
+        message: existing
+          ? 'Only a confirmed booking can be cancelled'
+          : 'Booking not found',
+      });
+    }
+
+    const gatewayResponse = await gatewayClient.refund(booking.paymentId);
+
+    if (gatewayResponse.status !== 202) {
+      await Booking.updateOne(
+        { _id: booking._id, status: 'CANCELLED', paymentStatus: 'PENDING' },
+        {
+          $set: {
+            status: 'CONFIRMED',
+            paymentStatus: 'SUCCEEDED',
+            refundStatus: 'FAILED',
+            cancelledAt: null,
+          },
+        }
+      );
+
+      return res.status(502).json({ message: 'Gateway did not accept the refund request' });
+    }
+
+    await releaseSeat(booking, ['BOOKED']);
+    return res.status(202).json({ booking: paymentToJSON(booking) });
   } catch (error) {
     return next(error);
   }
@@ -438,4 +584,9 @@ module.exports = {
   startBookingPayment,
   handlePaymentCallback,
   refundBooking,
+  requestHoldOtp,
+  verifyHoldOtp,
+  startPayment,
+  getPayment,
+  cancelBooking,
 };

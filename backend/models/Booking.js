@@ -12,7 +12,25 @@ const bookingSchema = new mongoose.Schema({
   },
   seatId: {
     type: String,
-    required: true,
+    default: null,
+  },
+  seatIds: {
+    type: [String],
+    default: [],
+  },
+  seats: {
+    type: [{
+      id: String,
+      seatId: String,
+      label: String,
+      row: String,
+      column: Number,
+      number: Number,
+      tier: String,
+      price: Number,
+      _id: false,
+    }],
+    default: [],
   },
   amount: {
     type: Number,
@@ -31,6 +49,7 @@ const bookingSchema = new mongoose.Schema({
       'CONFIRMED',
       'PAYMENT_FAILED',
       'EXPIRED',
+      'CANCELLED',
     ],
     default: 'HELD',
   },
@@ -50,6 +69,25 @@ const bookingSchema = new mongoose.Schema({
   holdExpiresAt: {
     type: Date,
     required: true,
+  },
+  movieId: Number,
+  movieTitle: String,
+  moviePoster: String,
+  theatre: String,
+  showTime: String,
+  showDate: String,
+  verificationToken: {
+    type: String,
+    default: null,
+  },
+  refundStatus: {
+    type: String,
+    enum: ['NONE', 'PENDING', 'SUCCEEDED', 'FAILED'],
+    default: 'NONE',
+  },
+  cancelledAt: {
+    type: Date,
+    default: null,
   },
 }, { timestamps: true });
 

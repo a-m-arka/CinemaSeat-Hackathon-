@@ -1,7 +1,6 @@
 const Booking = require('../models/Booking');
-const ShowSeat = require('../models/ShowSeat');
-
-const bookingFields = 'bookingRef showId seatId amount status paymentStatus holdExpiresAt createdAt updatedAt -_id';
+const { paymentToJSON } = require('../services/cinemaPresenter');
+const { releaseBookingSeats } = require('../services/holdService');
 
 const getBooking = async (req, res, next) => {
   const bookingRef = typeof req.params.bookingRef === 'string'
@@ -13,54 +12,40 @@ const getBooking = async (req, res, next) => {
   }
 
   try {
-    let booking = await Booking.findOne({ bookingRef })
-      .select(bookingFields)
-      .lean();
+    let booking = await Booking.findOne({
+      $or: [
+        { bookingRef },
+        { paymentId: bookingRef },
+      ],
+    });
 
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
     const now = new Date();
-    const holdExpired = booking.status === 'HELD'
+    const holdExpired = ['HELD', 'OTP_VERIFIED'].includes(booking.status)
       && booking.holdExpiresAt
       && new Date(booking.holdExpiresAt) <= now;
 
     if (holdExpired) {
       const expiredBooking = await Booking.findOneAndUpdate(
         {
-          bookingRef,
-          status: 'HELD',
+          bookingRef: booking.bookingRef,
+          status: { $in: ['HELD', 'OTP_VERIFIED'] },
           holdExpiresAt: { $ne: null, $lte: now },
         },
         { $set: { status: 'EXPIRED' } },
         { new: true }
-      )
-        .select(bookingFields)
-        .lean();
+      );
 
       if (expiredBooking) {
-        await ShowSeat.updateOne(
-          {
-            showId: expiredBooking.showId,
-            seatId: expiredBooking.seatId,
-            bookingRef: expiredBooking.bookingRef,
-            status: { $ne: 'BOOKED' },
-          },
-          {
-            $set: {
-              status: 'AVAILABLE',
-              bookingRef: null,
-              holdExpiresAt: null,
-            },
-          }
-        );
-
+        await releaseBookingSeats(expiredBooking.bookingRef);
         booking = expiredBooking;
       }
     }
 
-    return res.status(200).json(booking);
+    return res.status(200).json({ booking: paymentToJSON(booking) });
   } catch (error) {
     return next(error);
   }

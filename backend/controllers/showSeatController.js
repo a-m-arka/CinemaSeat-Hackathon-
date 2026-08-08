@@ -1,7 +1,8 @@
-const crypto = require('crypto');
 const ShowSeat = require('../models/ShowSeat');
-const Booking = require('../models/Booking');
-const { HOLD_TTL_SECONDS } = require('../config/env');
+const Movie = require('../models/Movie');
+const Show = require('../models/Show');
+const { seatToJSON, showToJSON } = require('../services/cinemaPresenter');
+const { createSeatHold } = require('../services/holdService');
 
 const getShowSeats = async (req, res, next) => {
   const showId = Number(req.params.showId);
@@ -11,6 +12,10 @@ const getShowSeats = async (req, res, next) => {
   }
 
   try {
+    const show = await Show.findOne({ id: showId }).lean();
+    if (!show) return res.status(404).json({ message: 'Show not found' });
+
+    const movie = await Movie.findOne({ id: show.movieId }).lean();
     const now = new Date();
 
     await ShowSeat.updateMany(
@@ -33,7 +38,10 @@ const getShowSeats = async (req, res, next) => {
       .sort({ row: 1, number: 1 })
       .lean();
 
-    return res.status(200).json({ showId, seats });
+    return res.status(200).json({
+      show: showToJSON(show, movie),
+      seats: seats.map(seatToJSON),
+    });
   } catch (error) {
     return next(error);
   }
@@ -51,73 +59,44 @@ const holdShowSeat = async (req, res, next) => {
     return res.status(400).json({ message: 'seatId is required' });
   }
 
-  const now = new Date();
-  const holdExpiresAt = new Date(now.getTime() + HOLD_TTL_SECONDS * 1000);
-  const bookingRef = crypto.randomUUID();
-
   try {
-    const seat = await ShowSeat.findOneAndUpdate(
-      {
-        showId,
-        seatId,
-        $or: [
-          { status: 'AVAILABLE' },
-          { status: 'HELD', holdExpiresAt: { $ne: null, $lte: now } },
-        ],
-      },
-      {
-        $set: {
-          status: 'HELD',
-          bookingRef,
-          holdExpiresAt,
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!seat) {
-      return res.status(409).json({
-        code: 'SEAT_UNAVAILABLE',
-        message: 'Seat is already held or booked',
-      });
-    }
-
-    try {
-      await Booking.create({
-        bookingRef,
-        showId,
-        seatId,
-        amount: seat.price,
-        status: 'HELD',
-        paymentStatus: 'NONE',
-        holdExpiresAt,
-      });
-    } catch (error) {
-      await ShowSeat.updateOne(
-        { showId, seatId, bookingRef, status: 'HELD' },
-        {
-          $set: {
-            status: 'AVAILABLE',
-            bookingRef: null,
-            holdExpiresAt: null,
-          },
-        }
-      );
-
-      throw error;
-    }
+    const { booking, hold } = await createSeatHold({ showId, seatIds: [seatId] });
 
     return res.status(201).json({
-      bookingRef,
+      bookingRef: booking.bookingRef,
       seatId,
       status: 'HELD',
-      price: seat.price,
-      amount: seat.price,
-      holdExpiresAt,
+      price: booking.amount,
+      amount: booking.amount,
+      holdExpiresAt: booking.holdExpiresAt,
+      hold,
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const holdShowSeats = async (req, res, next) => {
+  const showId = Number(req.params.showId);
+  const seatIds = Array.isArray(req.body?.seatIds)
+    ? req.body.seatIds.map((seatId) => String(seatId).trim()).filter(Boolean)
+    : [];
+
+  if (!Number.isInteger(showId)) {
+    return res.status(400).json({ message: 'showId must be a number' });
+  }
+
+  if (seatIds.length < 1 || seatIds.length > 4) {
+    return res.status(400).json({ message: 'Select between one and four seats' });
+  }
+
+  if (new Set(seatIds).size !== seatIds.length) {
+    return res.status(400).json({ message: 'Duplicate seatIds are not allowed' });
+  }
+
+  try {
+    const { hold } = await createSeatHold({ showId, seatIds });
+    return res.status(201).json({ hold });
   } catch (error) {
     return next(error);
   }
@@ -126,4 +105,5 @@ const holdShowSeat = async (req, res, next) => {
 module.exports = {
   getShowSeats,
   holdShowSeat,
+  holdShowSeats,
 };

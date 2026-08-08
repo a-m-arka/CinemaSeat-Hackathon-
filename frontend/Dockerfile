@@ -5,8 +5,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 
-ARG VITE_API_BASE_URL=/api
-ARG VITE_API_MODE=mock
+ARG VITE_API_BASE_URL=http://localhost:5000/api
+ARG VITE_API_MODE=remote
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_API_MODE=$VITE_API_MODE
 RUN npm run build
