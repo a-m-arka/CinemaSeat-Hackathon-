@@ -1,9 +1,5 @@
-function Seat({ seat, selectedSeat, onSelect }) {
-
-  const isSelected = selectedSeat?.id === seat.id
-
-  let seatStyle =
-    "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+function Seat({ seat, isOwned = false, isSelected = false, disabled = false, onSelect }) {
+  let seatStyle = "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
 
   if (seat.status === "HELD") {
     seatStyle =
@@ -15,20 +11,12 @@ function Seat({ seat, selectedSeat, onSelect }) {
       "bg-red-500/20 text-red-400 cursor-not-allowed"
   }
 
-  if (isSelected) {
-    seatStyle =
-      "bg-white text-black"
+  if (isSelected || isOwned) {
+    seatStyle = "bg-white text-black ring-2 ring-white/30"
   }
 
   const handleClick = () => {
-
-    if (
-      seat.status === "HELD" ||
-      seat.status === "BOOKED"
-    ) {
-      return
-    }
-
+    if (disabled || seat.status !== "AVAILABLE") return
     onSelect(seat)
   }
 
@@ -36,8 +24,12 @@ function Seat({ seat, selectedSeat, onSelect }) {
   return (
     <button
       onClick={handleClick}
+      type="button"
+      disabled={disabled || seat.status !== "AVAILABLE"}
+      aria-label={`${seat.label}, ${seat.status.toLowerCase()}, ৳${seat.price}`}
+      aria-pressed={isSelected || isOwned}
       className={`
-        h-11 w-11 rounded-lg
+        h-11 w-11 rounded-lg disabled:hover:bg-inherit
         text-sm font-medium
         transition
         ${seatStyle}
