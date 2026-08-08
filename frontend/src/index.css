@@ -1,1 +1,92 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #08080d;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(124, 58, 237, 0.13), transparent 28rem),
+    radial-gradient(circle at 88% 26%, rgba(225, 29, 72, 0.08), transparent 30rem),
+    #08080d;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+::selection {
+  color: white;
+  background: rgba(139, 92, 246, 0.65);
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.app-shell::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.18;
+  background-image: linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+
+.gradient-text {
+  color: transparent;
+  background-image: linear-gradient(100deg, #fff 10%, #c4b5fd 50%, #fda4af 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.premium-panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(145deg, rgba(24, 24, 33, 0.96), rgba(12, 12, 18, 0.96));
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.ticket-card {
+  position: relative;
+}
+
+.ticket-card::before,
+.ticket-card::after {
+  position: absolute;
+  top: 43%;
+  width: 2rem;
+  height: 2rem;
+  content: "";
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: #08080d;
+}
+
+.ticket-card::before {
+  left: -1.05rem;
+}
+
+.ticket-card::after {
+  right: -1.05rem;
+}
