@@ -38,6 +38,10 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  gatewayEventId: {
+    type: String,
+    default: null,
+  },
   paymentStatus: {
     type: String,
     enum: ['NONE', 'PENDING', 'SUCCEEDED', 'FAILED', 'REFUNDED'],
